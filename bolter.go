@@ -53,6 +53,11 @@ COPYRIGHT:
 			Usage:       "boltdb `FILE` to view",
 			Destination: &file,
 		},
+		cli.BoolFlag{
+			Name:        "machine, m",
+			Usage:       "key=value format",
+			Destination: &machineFriendly,
+		},
 	}
 	app.Action = func(c *cli.Context) error {
 		if file == "" {
@@ -61,7 +66,12 @@ COPYRIGHT:
 		}
 
 		var i impl
-		i = impl{fmt: &tableFormatter{}}
+		if machineFriendly {
+			i = impl{fmt: &machineFormatter{}}
+		} else {
+			i = impl{fmt: &tableFormatter{}}
+		}
+
 		if _, err := os.Stat(file); os.IsNotExist(err) {
 			log.Fatal(err)
 			return err
@@ -245,4 +255,18 @@ func (tf tableFormatter) DumpBucketItems(bucket string, items []item) {
 		table.Append(row)
 	}
 	table.Render()
+}
+
+type machineFormatter struct{}
+
+func (mf machineFormatter) DumpBuckets(buckets []bucket) {
+	for _, b := range buckets {
+		fmt.Println(b.Name)
+	}
+}
+
+func (mf machineFormatter) DumpBucketItems(_ string, items []item) {
+	for _, item := range items {
+		fmt.Printf("%s=%s\n", item.Key, item.Value)
+	}
 }
